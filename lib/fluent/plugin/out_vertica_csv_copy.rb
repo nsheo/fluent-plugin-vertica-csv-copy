@@ -83,24 +83,25 @@ module Fluent
 	  
       def write(chunk)
 	    
-        log.info "Data reformatting start"
+        #log.info "Data reformatting start"
 	  
         database, table = expand_placeholders(chunk.metadata)
     		
         data_count = 0
         tmp = Tempfile.new("vertica-copy-temp")
         chunk.msgpack_each do |tag, time, data|
-          tmp.write format_proc.call(tag, time, data).join("|") + "\n"
+          tmp.write format_proc.call(tag, time, data).join("\t") + "\n"
           data_count += 1
         end	
         tmp.close
 		
-        log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
+        #log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
 		
         vertica.copy(<<-SQL)
           COPY #{schema}.#{table} (#{column_names})
           FROM LOCAL '#{tmp.path}' 
-          DELIMITER '|'
+          DELIMITER E'\t'
+		  RECORD TERMINATOR E'\n' 
           ENFORCELENGTH
           ABORT ON ERROR
           NULL ''
