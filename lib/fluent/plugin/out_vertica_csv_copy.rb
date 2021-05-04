@@ -22,6 +22,8 @@ module Fluent
 
       helpers :compat_parameters, :inject
 	  
+      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER E'\t' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME 'Loading Data by fluentd'"
+	   
 	  def initialize
         super
         require 'vertica'
@@ -95,30 +97,19 @@ module Fluent
         end	
 
         #log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
+		tmp.close
 		
-        vertica.copy(<<-SQL)  { |handle| handle.write(tmp.read) }
-          COPY #{schema}.#{table} (#{column_names})
-          FROM LOCAL '#{tmp.path}' 
-          DELIMITER E'\t'
-		  RECORD TERMINATOR E'\n' 
-          ENFORCELENGTH
-          ABORT ON ERROR
-          NULL ''
-          REJECTED DATA '#{rejected_path}'
-          EXCEPTIONS '#{exception_path}'
-          DIRECT
-          STREAM NAME 'Loading Data by fluentd'
-        SQL
+		tmp.read do |io|
+		  vertica.copy(QUERY_TEMPLATE %([@schema, @table, @column_names, tmp.path, @rejected_path, @exception_path]), source: io)
+		end
 
         vertica.close
         @vertica = nil
-		
-		tmp.close(true)
         log.info "Data loaded \"%s:%s\" table is %d" % ([@database, @table, data_count])
       end
 
 	  
-	  private
+      private
 	  
       def format_proc
         proc do |tag, time, record|
