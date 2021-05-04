@@ -22,7 +22,7 @@ module Fluent
 
       helpers :compat_parameters, :inject
 	  
-      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER E'\t' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME 'Loading Data by fluentd'"
+      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER E'\t' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME 'Loading Data by fluentd'"
 	   
 	  def initialize
         super
@@ -97,14 +97,16 @@ module Fluent
         end	
 
         #log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
-		tmp.close
+        tmp.close
 		
-		tmp.read do |io|
-		  vertica.copy(QUERY_TEMPLATE %([@schema, @table, @column_names, tmp.path, @rejected_path, @exception_path]), source: io)
+		tmp.open() do |io|
+		  vertica.copy(QUERY_TEMPLATE %([@schema, @table, @column_names, @rejected_path, @exception_path]), source: io)
 		end
 
         vertica.close
         @vertica = nil
+		
+		tmp.unlink
         log.info "Data loaded \"%s:%s\" table is %d" % ([@database, @table, data_count])
       end
 
