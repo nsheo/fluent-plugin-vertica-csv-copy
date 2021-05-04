@@ -77,12 +77,12 @@ module Fluent
 	  
      def expand_placeholders(metadata)
         database = extract_placeholders(@database, metadata).gsub('.', '_')
-        table = extract_placeholders(@tablename, metadata).gsub('.', '_')
+        table = extract_placeholders(@table, metadata).gsub('.', '_')
         return database, table
       end
 	  
       def write(chunk)
-        database, tablename = expand_placeholders(chunk.metadata)
+        database, table = expand_placeholders(chunk.metadata)
     		
         data_count = 0
         tmp = Tempfile.new("vertica-copy-temp")
@@ -92,7 +92,9 @@ module Fluent
         end
 		
         tmp.close
-	    
+		
+	    log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
+		
         vertica.copy(<<-SQL)
           COPY #{schema}.#{table} (#{column_names})
           FROM LOCAL tmp.path 
@@ -111,7 +113,7 @@ module Fluent
         vertica.close
         @vertica = nil
 		
-        log.info "Data loaded \"%s:%s\" table is %d" % ([@database, @tablename, data_count])
+        log.info "Data loaded \"%s:%s\" table is %d" % ([@database, @table, data_count])
       end
 
 	  
