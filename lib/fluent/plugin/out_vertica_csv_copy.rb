@@ -26,25 +26,25 @@ module Fluent
         require 'tempfile'
       end 
 	  
-	  config_param :host,           :string,  :default => '127.0.0.1', desc: "Database host"
+      config_param :host,           :string,  :default => '127.0.0.1', desc: "Database host"
       config_param :port,           :integer, :default => 5433, desc: "Database port"
       config_param :username,       :string,  :default => 'dbadmin', desc: "Database user"
       config_param :password,       :string,  :default => nil, desc: "Database password"
       config_param :database,       :string,  :default => nil, desc: "Database name"
       config_param :schema,         :string,  :default => nil, desc: "Database schema"
       config_param :table,          :string,  :default => nil, desc: "Database target table"
-	  config_param :column_names,   :string,  :default => nil, desc: "Column names for data load"
-	  config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
-	  config_param :rejected_path,  :string,  :default => nil, desc: "File path for rejected data" 
-	  config_param :exception_path, :string,  :default => nil, desc: "File path for exception data" 
-	  config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
+      config_param :column_names,   :string,  :default => nil, desc: "Column names for data load"
+      config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
+      config_param :rejected_path,  :string,  :default => nil, desc: "File path for rejected data" 
+      config_param :exception_path, :string,  :default => nil, desc: "File path for exception data" 
+      config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
       config_param :ssl,            :bool,    :default => false, desc: "Database ssl connection info"
 	  
 	  def configure(conf)
         compat_parameters_convert(conf, :buffer, :inject)
         super
-        if @database.nil? || @table.nil? || @column_names.nil?
-          raise Fluent::ConfigError, "database and tablename and column_names is required."
+        if @database.nil? || @table.nil? || @column_names.nil? || @schema.nil?
+          raise Fluent::ConfigError, "database and schema and tablename and column_names is required."
         end
 		
 		@key_names = @key_names.nil? ? @column_names.split(',') : @key_names.split(',')
@@ -74,13 +74,13 @@ module Fluent
         true
       end
 	  
-	  def expand_placeholders(metadata)
+     def expand_placeholders(metadata)
         database = extract_placeholders(@database, metadata).gsub('.', '_')
         table = extract_placeholders(@tablename, metadata).gsub('.', '_')
         return database, table
       end
 	  
-	  def write(chunk)
+      def write(chunk)
         database, tablename = expand_placeholders(chunk.metadata)
     		
         data_count = 0
@@ -92,22 +92,22 @@ module Fluent
 		
         tmp.close
 	    
-		vertica.copy(<<-SQL)
-          COPY #{table} (#{column_names})
+        vertica.copy(<<-SQL)
+          COPY #{schema}.#{table} (#{column_names})
           FROM LOCAL tmp.path 
-		  DELIMITER E'\t'
+          DELIMITER E'\t'
           RECORD TERMINATOR E'\n' 
-		  NULL AS '__NULL__'
+          NULL AS '__NULL__'
           ENFORCELENGTH
-	      ABORT ON ERROR
-		  NULL ''
-	      REJECTED DATA #{rejected_path}
+          ABORT ON ERROR
+          NULL ''
+          REJECTED DATA #{rejected_path}
           EXCEPTIONS #{exception_path}
-		  DIRECT
-		  STREAM NAME 'Loading Data by fluentd'
+          DIRECT
+          STREAM NAME 'Loading Data by fluentd'
         SQL
 
-	    vertica.close
+        vertica.close
         @vertica = nil
 		
         log.info "Data loaded \"%s:%s\" table is %d" % ([@database, @tablename, data_count])
@@ -116,7 +116,7 @@ module Fluent
 	  
 	  private
 	  
-	  def format_proc
+      def format_proc
         proc do |tag, time, record|
           values = []
           @key_names.each_with_index do |key, i|
@@ -132,7 +132,7 @@ module Fluent
       end
 
 	  
-	  def vertica
+      def vertica
         @vertica ||= Vertica.connect({
           :host     => @host,
           :user     => @username,

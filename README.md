@@ -38,11 +38,12 @@ $ fluent-plugin-config-format output vertica-csv-copy
 <match loaddata.**>
   type vertica_csv_copy
   host localhost
-  port 3306
+  port 5433
   username taro
   password abcdefg
   database fluentd
-  tablename test
+  schema VTCD
+  table test
   column_names id,txt,txt2,txt3,created_at
   key_names id,txt,txt2,txt3,#{time}
 
