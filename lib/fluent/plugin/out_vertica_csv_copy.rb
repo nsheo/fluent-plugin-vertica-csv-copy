@@ -100,7 +100,7 @@ module Fluent
 		
         vertica.copy(<<-SQL)
           COPY #{schema}.#{table} (#{column_names})
-          FROM LOCAL tmp.path 
+          FROM LOCAL #{tmp.path} 
           DELIMITER E'\t'
           RECORD TERMINATOR E'\n' 
           NULL AS '__NULL__'
