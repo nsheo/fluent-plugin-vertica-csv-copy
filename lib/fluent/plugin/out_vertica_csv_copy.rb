@@ -90,7 +90,7 @@ module Fluent
         data_count = 0
         tmp = Tempfile.new("vertica-copy-temp")
         chunk.msgpack_each do |tag, time, data|
-          tmp.write format_proc.call(tag, time, data).join("\t") + "\n"
+          tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
         end	
         tmp.close
@@ -100,8 +100,7 @@ module Fluent
         vertica.copy(<<-SQL)
           COPY #{schema}.#{table} (#{column_names})
           FROM LOCAL #{tmp.path} 
-          DELIMITER E'\\t'
-          RECORD TERMINATOR E'\\n' NULL AS '__NULL__'
+          DELIMITER '|'
           ENFORCELENGTH
           ABORT ON ERROR
           NULL ''
