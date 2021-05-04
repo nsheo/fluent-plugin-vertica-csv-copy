@@ -37,7 +37,6 @@ module Fluent
       config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
       config_param :rejected_path,  :string,  :default => nil, desc: "File path for rejected data" 
       config_param :exception_path, :string,  :default => nil, desc: "File path for exception data" 
-      config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
       config_param :ssl,            :bool,    :default => false, desc: "Database ssl connection info"
 	  
 	  def configure(conf)
