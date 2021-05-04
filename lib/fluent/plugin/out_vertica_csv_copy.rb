@@ -41,14 +41,14 @@ module Fluent
       config_param :exception_path, :string,  :default => nil, desc: "File path for exception data" 
       config_param :ssl,            :bool,    :default => false, desc: "Database ssl connection info"
 	  
-	  def configure(conf)
+      def configure(conf)
         compat_parameters_convert(conf, :buffer, :inject)
         super
         if @database.nil? || @table.nil? || @column_names.nil? || @schema.nil?
           raise Fluent::ConfigError, "database and schema and tablename and column_names is required."
         end
 		
-		@key_names = @key_names.nil? ? @column_names.split(',') : @key_names.split(',')
+        @key_names = @key_names.nil? ? @column_names.split(',') : @key_names.split(',')
         unless @column_names.split(',').count == @key_names.count
           raise Fluent::ConfigError, "It does not take the integrity of the key_names and column_names."
         end
@@ -62,7 +62,7 @@ module Fluent
         super
       end
 	  
-	  def format(tag, time, record)
+      def format(tag, time, record)
         record = inject_values_to_record(tag, time, record)
         [tag, time, record].to_msgpack
       end
@@ -83,7 +83,7 @@ module Fluent
 	  
       def write(chunk)
 	    
-		log.info "Data reformatting start"
+        log.info "Data reformatting start"
 	  
         database, table = expand_placeholders(chunk.metadata)
     		
@@ -92,18 +92,16 @@ module Fluent
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("\t") + "\n"
           data_count += 1
-        end
-		
+        end	
         tmp.close
 		
-	    log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
+        log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
 		
         vertica.copy(<<-SQL)
           COPY #{schema}.#{table} (#{column_names})
           FROM LOCAL #{tmp.path} 
           DELIMITER E'\t'
-          RECORD TERMINATOR E'\n' 
-          NULL AS '__NULL__'
+          RECORD TERMINATOR E'\n' NULL AS '__NULL__'
           ENFORCELENGTH
           ABORT ON ERROR
           NULL ''
