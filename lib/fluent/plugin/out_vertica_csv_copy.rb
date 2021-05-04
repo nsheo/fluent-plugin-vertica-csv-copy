@@ -19,6 +19,8 @@ module Fluent
   module Plugin
     class VerticaCsvCopyOutput < Fluent::Plugin::Output
       Fluent::Plugin.register_output("vertica_csv_copy", self)
+
+      helpers :compat_parameters, :inject
 	  
 	  def initialize
         super
