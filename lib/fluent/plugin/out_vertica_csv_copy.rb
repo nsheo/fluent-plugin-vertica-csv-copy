@@ -99,13 +99,13 @@ module Fluent
 		
         vertica.copy(<<-SQL)
           COPY #{schema}.#{table} (#{column_names})
-          FROM LOCAL #{tmp.path} 
+          FROM LOCAL '#{tmp.path}' 
           DELIMITER '|'
           ENFORCELENGTH
           ABORT ON ERROR
           NULL ''
-          REJECTED DATA #{rejected_path}
-          EXCEPTIONS #{exception_path}
+          REJECTED DATA '#{rejected_path}'
+          EXCEPTIONS '#{exception_path}'
           DIRECT
           STREAM NAME 'Loading Data by fluentd'
         SQL
