@@ -82,6 +82,9 @@ module Fluent
       end
 	  
       def write(chunk)
+	    
+		log.info "Data reformatting \"%s:%s\"" % ([@database, @table])
+	  
         database, table = expand_placeholders(chunk.metadata)
     		
         data_count = 0
