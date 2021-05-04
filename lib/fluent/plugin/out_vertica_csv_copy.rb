@@ -93,11 +93,10 @@ module Fluent
           tmp.write format_proc.call(tag, time, data).join("\t") + "\n"
           data_count += 1
         end	
-        tmp.close
-		
+
         #log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
 		
-        vertica.copy(<<-SQL)
+        vertica.copy(<<-SQL)  { |handle| handle.write(tmp.read) }
           COPY #{schema}.#{table} (#{column_names})
           FROM LOCAL '#{tmp.path}' 
           DELIMITER E'\t'
@@ -114,6 +113,7 @@ module Fluent
         vertica.close
         @vertica = nil
 		
+		tmp.close(true)
         log.info "Data loaded \"%s:%s\" table is %d" % ([@database, @table, data_count])
       end
 
