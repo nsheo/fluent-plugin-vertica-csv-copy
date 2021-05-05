@@ -108,7 +108,7 @@ module Fluent
         @vertica = nil
 		
 		tmp.unlink
-        log.info "Data loaded \"%s:%s\" table is %d" % ([@database, @table, data_count])
+        log.info "Stream Data \"%s:%s:%sFluentd%d:%d\"" % ([@database, @table, @table, current_time, data_count])
       end
 
 	  
