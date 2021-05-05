@@ -22,12 +22,13 @@ module Fluent
 
       helpers :compat_parameters, :inject
 	  
-      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER E'\t' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME 'Loading Data by fluentd'"
+      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
 	   
 	  def initialize
         super
         require 'vertica'
         require 'tempfile'
+		require 'time'
       end 
 	  
       config_param :host,           :string,  :default => '127.0.0.1', desc: "Database host"
@@ -92,15 +93,15 @@ module Fluent
         data_count = 0
         tmp = Tempfile.new("vertica-copy-temp")
         chunk.msgpack_each do |tag, time, data|
-          tmp.write format_proc.call(tag, time, data).join("\t") + "\n"
+          tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
         end	
 
         #log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
         tmp.close
-		
+		current_time = (Time.now.to_f * 1000).round
 		tmp.open() do |io|
-		  vertica.copy(QUERY_TEMPLATE %([@schema, @table, @column_names, @rejected_path, @exception_path]), source: io)
+		  vertica.copy(QUERY_TEMPLATE %([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
 		end
 
         vertica.close
