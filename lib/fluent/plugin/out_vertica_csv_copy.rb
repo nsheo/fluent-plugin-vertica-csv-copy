@@ -96,8 +96,8 @@ module Fluent
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
         end	
-		tmp.read
-        #log.info "Data start \"%s:%s\" table is %d" % ([@database, @table, data_count])
+		
+        log.info "Data Check \"%s\"" % ([tmp.read])
         tmp.close
 		current_time = (Time.now.to_f * 1000).round
 		tmp.open() do |io|
