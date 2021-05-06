@@ -28,7 +28,6 @@ module Fluent
         super
         require 'vertica'
         require 'tempfile'
-		require 'time'
       end 
 	  
       config_param :host,           :string,  :default => '127.0.0.1', desc: "Database host"
@@ -95,9 +94,10 @@ module Fluent
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
+		  log.info "Check result %s" %([format_proc.call(tag, time, data).join("|")])
         end	
 		
-        log.info "Data Check \"%s\"" % ([tmp.read])
+        #log.info "Data Check \"%s\"" % ([tmp.read])
         tmp.close
 		current_time = (Time.now.to_f * 1000).round
 		tmp.open() do |io|
@@ -108,7 +108,7 @@ module Fluent
         @vertica = nil
 		
 		tmp.unlink
-        log.info "Stream Data \"%s:%s:%sFluentd%d:%d\"" % ([@database, @table, @table, current_time, data_count])
+        log.info "Stream Data \"%s:%s:%s:%sFluentd%d:%d\"" % ([@database, @schema, @table, @table, current_time, data_count])
       end
 
 	  
