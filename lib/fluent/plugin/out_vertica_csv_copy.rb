@@ -94,13 +94,13 @@ module Fluent
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
-		  log.info "Check result %s" %([format_proc.call(tag, time, data).join("|")])
+		  #log.info "Check result %s" %([format_proc.call(tag, time, data).join("|")])
         end	
 		
         #log.info "Data Check \"%s\"" % ([tmp.read])
         tmp.close
 		current_time = (Time.now.to_f * 1000).round
-		tmp.open() do |io|
+		File.open(tmp.path, "r") do |io|
 		  vertica.copy(QUERY_TEMPLATE %([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
 		end
 		
