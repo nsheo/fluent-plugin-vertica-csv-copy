@@ -37,6 +37,7 @@ $ fluent-plugin-config-format output vertica-csv-copy
 ```
 <match loaddata.**>
   type vertica_csv_copy
+  #base setting
   host localhost
   port 5433
   username taro
