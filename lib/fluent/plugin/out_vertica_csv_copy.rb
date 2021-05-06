@@ -22,7 +22,8 @@ module Fluent
 
       helpers :compat_parameters, :inject
 
-      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
+      #need to fix error about storage permission denied on REJECTED/EXCEPTIONS path
+      #QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
 	  
       QUERY_TEMPLATE_NORJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
 	  
@@ -41,8 +42,8 @@ module Fluent
       config_param :table,          :string,  :default => nil, desc: "Database target table"
       config_param :column_names,   :string,  :default => nil, desc: "Column names for data load"
       config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
-      config_param :rejected_path,  :string,  :default => nil, desc: "File path for rejected data" 
-      config_param :exception_path, :string,  :default => nil, desc: "File path for exception data" 
+      #config_param :rejected_path,  :string,  :default => nil, desc: "File path for rejected data" 
+      #config_param :exception_path, :string,  :default => nil, desc: "File path for exception data" 
       config_param :ssl,            :bool,    :default => false, desc: "Database ssl connection info"
 	  
       def configure(conf)
@@ -103,11 +104,11 @@ module Fluent
         tmp.close
         current_time = (Time.now.to_f * 1000).round
         File.open(tmp.path, "r") do |io|
-          if @rejected_path.nil? 
-            vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: io)
-          else 
-            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
-          end
+          #if @rejected_path.nil? 
+          vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: io)
+          #else 
+          #  vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
+          #end
         end
 		
         vertica.close

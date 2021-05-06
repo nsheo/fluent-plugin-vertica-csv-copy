@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name    = "fluent-plugin-vertica-csv-copy"
-  spec.version = "0.1.0"
+  spec.version = "1.0.0"
   spec.authors = ["nsheo"]
   spec.email   = ["nsheo@ntels.com"]
 
