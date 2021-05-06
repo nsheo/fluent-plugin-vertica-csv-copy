@@ -21,9 +21,11 @@ module Fluent
       Fluent::Plugin.register_output("vertica_csv_copy", self)
 
       helpers :compat_parameters, :inject
-	  
+
       QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
-	   
+	  
+      QUERY_TEMPLATE_NORJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
+	  
 	  def initialize
         super
         require 'vertica'
@@ -94,15 +96,19 @@ module Fluent
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
-		  #log.info "Check result %s" %([format_proc.call(tag, time, data).join("|")])
+          #log.info "Check result %s" %([format_proc.call(tag, time, data).join("|")])
         end	
 		
         #log.info "Data Check \"%s\"" % ([tmp.read])
         tmp.close
-		current_time = (Time.now.to_f * 1000).round
-		File.open(tmp.path, "r") do |io|
-		  vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
-		end
+        current_time = (Time.now.to_f * 1000).round
+        File.open(tmp.path, "r") do |io|
+          if @rejected_path.nil? 
+            vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: io)
+          else 
+            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
+          end
+        end
 		
         vertica.close
         @vertica = nil
