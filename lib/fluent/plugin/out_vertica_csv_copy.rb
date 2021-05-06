@@ -23,10 +23,10 @@ module Fluent
       helpers :compat_parameters, :inject
 
       #you need to run this
-      QUERY_TEMPLATE_LOCAL = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
-      QUERY_TEMPLATE_LOCAL_NORJT = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"	  
-      QUERY_TEMPLATE_STDIN = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
-      QUERY_TEMPLATE_STDIN_NORJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
+      QUERY_TEMPLATE_LOCAL = "COPY %s.%s (%s) FROM LOCAL STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
+      QUERY_TEMPLATE_LOCAL_NORJT = "COPY %s.%s (%s) FROM LOCAL STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"	  
+      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
+      QUERY_TEMPLATE_NORJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
 	  
 	  def initialize
         super
@@ -104,20 +104,21 @@ module Fluent
         tmp.close
         current_time = (Time.now.to_f * 1000).round
 		
-        if @local_node_run == false
-          File.open(tmp.path, "r") do |io|
+        File.open(tmp.path, "r") do |io|
+          if @local_node_run == false
             if @rejected_path.nil?
-              vertica.copy(QUERY_TEMPLATE_STDIN_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: io)
+              vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: io)
             else
-              vertica.copy(QUERY_TEMPLATE_STDIN % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
+              vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
+            end
+          else 
+            if @rejected_path.nil?
+              vertica.copy(QUERY_TEMPLATE_LOCAL_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: io)
+            else
+              vertica.copy(QUERY_TEMPLATE_LOCAL % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
             end
           end
-        else
-          if @rejected_path.nil?
-            vertica.copy(QUERY_TEMPLATE_LOCAL_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]))
-          else
-            vertica.copy(QUERY_TEMPLATE_LOCAL % ([@schema, @table, @column_names, tmp.path, @rejected_path, @exception_path, @table, current_time]))
-          end
+          
         end
 
         vertica.close
