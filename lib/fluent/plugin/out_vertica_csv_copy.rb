@@ -101,7 +101,7 @@ module Fluent
         tmp.close
 		current_time = (Time.now.to_f * 1000).round
 		File.open(tmp.path, "r") do |io|
-		  vertica.copy(QUERY_TEMPLATE %([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
+		  vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
 		end
 		
         vertica.close
