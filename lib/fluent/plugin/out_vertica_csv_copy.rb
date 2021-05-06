@@ -94,7 +94,7 @@ module Fluent
     		
         data_count = 0
         temp_opts = ["perm": 1666]
-        tmp = Tempfile.new("vertica-copy-temp", nil, mode:0, temp_opts)
+        tmp = Tempfile.new("vertica-copy-temp", nil, 0, temp_opts)
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
