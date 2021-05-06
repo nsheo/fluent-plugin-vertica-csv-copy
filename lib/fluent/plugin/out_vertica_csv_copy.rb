@@ -94,7 +94,8 @@ module Fluent
         database, table = expand_placeholders(chunk.metadata)
     		
         data_count = 0
-        tmp = Tempfile.new("vertica-copy-temp")
+        temp_opts[:perm] = 1666
+        tmp = Tempfile.new("vertica-copy-temp", nil, mode:0, temp_opts)
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
