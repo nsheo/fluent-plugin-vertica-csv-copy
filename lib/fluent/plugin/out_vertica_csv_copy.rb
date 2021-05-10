@@ -132,9 +132,9 @@ module Fluent
         else 
           File.chmod(1666, tmp.path)
           if @rejected_path.nil?
-            vertica.copy(QUERY_TEMPLATE_LOCAL_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]), source: io)
+            vertica.copy(QUERY_TEMPLATE_LOCAL_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]))
           else
-            vertica.copy(QUERY_TEMPLATE_LOCAL % ([@schema, @table, @column_names, tmp.path, @rejected_path, @exception_path, @table, current_time]), source: io)
+            vertica.copy(QUERY_TEMPLATE_LOCAL % ([@schema, @table, @column_names, tmp.path, @rejected_path, @exception_path, @table, current_time]))
           end
         end
 
