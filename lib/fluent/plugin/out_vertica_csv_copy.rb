@@ -93,7 +93,7 @@ module Fluent
         database, table = expand_placeholders(chunk.metadata)
     		
         data_count = 0
-        tmp = Tempfile.new("vertica-copy-temp")
+        tmp = Tempfile.new("vertica-copy-temp", [perm = 0777])
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
@@ -130,7 +130,7 @@ module Fluent
             end
           end
         else 
-          File.chmod(0777, tmp.path)
+          #File.chmod(0777, tmp.path)
           if @rejected_path.nil?
             vertica.copy(QUERY_TEMPLATE_LOCAL_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]))
           else
