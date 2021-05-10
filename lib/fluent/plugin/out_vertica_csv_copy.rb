@@ -22,11 +22,13 @@ module Fluent
 
       helpers :compat_parameters, :inject
 
-      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
-      #run only local node
+      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA AS TABLE '%s' DIRECT STREAM NAME '%sFluentd%d'"
       QUERY_TEMPLATE_NORJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
+      
+      QUERY_LOCAL_TEMPLATE = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
+      QUERY_LOCAL_TEMPLATE_NORJT = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
 	  
-	  def initialize
+      def initialize
         super
         require 'vertica'
         require 'tempfile'
@@ -41,7 +43,7 @@ module Fluent
       config_param :table,          :string,  :default => nil, desc: "Database target table"
       config_param :column_names,   :string,  :default => nil, desc: "Column names for data load"
       config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
-      config_param :rejected_path,  :string,  :default => nil, desc: "File path for rejected data" 
+      config_param :rejected_path,  :string,  :default => nil, desc: "File path or table(local_node_run is false) for rejected data" 
       config_param :exception_path, :string,  :default => nil, desc: "File path for exception data" 
       config_param :local_node_run, :bool,    :default => false, desc: "When run this plugin on vertica node to run file copy"
       config_param :ssl,            :bool,    :default => false, desc: "Database ssl connection info"
@@ -100,34 +102,31 @@ module Fluent
 		
         #log.info "Data Check \"%s\"" % ([tmp.read])
         tmp.close
-        current_time = (Time.now.to_f * 1000).round
-        if @rejected_path.nil? == false
-           if File.exist?(@rejected_path) == false
-             rejected_file = File.new("#{@rejected_path}", "w") 
-             rejected_file.close
-           end
-           File.chmod(0644, "#{@rejected_path}")
-           FileUtils.chown 'dbadmin', 'dbadmin', "#{@rejected_path}"
-        end
         
-         if @exception_path.nil? == false
-           if File.exist?(@exception_path) == false
-             rejected_file = File.new("#{@exception_path}", "w") 
-             rejected_file.close
-           end
-           File.chmod(0644, "#{@exception_path}")
-           FileUtils.chown 'dbadmin', 'dbadmin', "#{@exception_path}"
-        end
-        if @rejected_path.nil?
-          vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
-        else
-          if @local_node_run == false
+        current_time = (Time.now.to_f * 1000).round
+#        if @rejected_path.nil? == false
+#           if File.exist?(@rejected_path) == false
+#             rejected_file = File.new("#{@rejected_path}", "w") 
+#             rejected_file.close
+#           end
+#           File.chmod(0644, "#{@rejected_path}")
+#           FileUtils.chown 'dbadmin', 'dbadmin', "#{@rejected_path}"
+#        end
+
+        if @local_node_run == false
+          if @rejected_path.nil?
             vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
-          else 
-            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: tmp.path)
+          else
+            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @table, current_time]), source: tmp.path)
+          end
+        else 
+          if @rejected_path.nil?
+            vertica.sql(QUERY_LOCAL_TEMPLATE_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]))
+          else
+            vertica.sql(QUERY_LOCAL_TEMPLATE % ([@schema, @table, @column_names, tmp.path, @rejected_path, @exception_path, @table, current_time]))
           end
         end
-
+        
         vertica.close
         @vertica = nil
         log.info "Stream Data \"%s:%s:%s:%sFluentd%d:%d\"" % ([@database, @schema, @table, @table, current_time, data_count])
