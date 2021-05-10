@@ -120,6 +120,7 @@ module Fluent
             vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @table, current_time]), source: tmp.path)
           end
         else 
+          FileUtils.chmod(0644, tmp.path)
           if @rejected_path.nil?
             vertica.sql(QUERY_LOCAL_TEMPLATE_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]))
           else
