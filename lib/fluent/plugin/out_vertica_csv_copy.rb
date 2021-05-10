@@ -93,7 +93,7 @@ module Fluent
         database, table = expand_placeholders(chunk.metadata)
     		
         data_count = 0
-        tmp = Tempfile.new("vertica-copy-temp", perm: 1644)
+        tmp = Tempfile.new("vertica-copy-temp")
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
           data_count += 1
@@ -108,7 +108,7 @@ module Fluent
              rejected_file = File.new("#{@rejected_path}", "w") 
              rejected_file.close
            end
-           File.chmod(1644, "#{@rejected_path}")
+           File.chmod(0644, "#{@rejected_path}")
            FileUtils.chown 'dbadmin', 'dbadmin', "#{@rejected_path}"
         end
         
@@ -117,7 +117,7 @@ module Fluent
              rejected_file = File.new("#{@exception_path}", "w") 
              rejected_file.close
            end
-           File.chmod(1644, "#{@exception_path}")
+           File.chmod(0644, "#{@exception_path}")
            FileUtils.chown 'dbadmin', 'dbadmin', "#{@exception_path}"
         end
         
@@ -130,7 +130,7 @@ module Fluent
             end
           end
         else 
-          File.chmod(1666, tmp.path)
+          File.chmod(0644, tmp.path)
           if @rejected_path.nil?
             vertica.copy(QUERY_TEMPLATE_LOCAL_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]))
           else
