@@ -26,10 +26,11 @@ module Fluent
       #run only local node
       QUERY_TEMPLATE_NORJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
 	  
-	  def initialize
+      def initialize
         super
-        require 'vertica'
         require 'tempfile'
+        require 'activerecord-jdbc-adapter'
+        require 'jdbc-vertica'
       end 
 	  
       config_param :host,           :string,  :default => '127.0.0.1', desc: "Database host"
@@ -119,12 +120,12 @@ module Fluent
            FileUtils.chown 'dbadmin', 'dbadmin', "#{@exception_path}"
         end
         if @rejected_path.nil?
-          vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
+          vertica.connection.execute(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
         else
           if @local_node_run == false
-            vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
+            vertica.connection.execute(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
           else 
-            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: tmp.path)
+            vertica.connection.execute(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: tmp.path)
           end
         end
 
@@ -153,14 +154,15 @@ module Fluent
 
 	  
       def vertica
-        @vertica ||= Vertica.connect({
-          :host     => @host,
-          :user     => @username,
-          :password => @password,
-          :ssl      => @ssl,
-          :port     => @port,
-          :database => @database
-        })
+        Jdbc::Vertica.load_driver
+        @vertica ||= ActiveRecord::Base.establish_connection(
+          adapter:    "jdbc",
+          driver:     "com.vertica.jdbc.Driver",
+          url:        "jdbc:vertica://#{@host}:#{@port}/"
+          user:       @username,
+          password:   @password,
+          database:   @database
+        )
       end
     end
   end

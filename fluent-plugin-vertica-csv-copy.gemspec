@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name    = "fluent-plugin-vertica-csv-copy"
-  spec.version = "1.0.1"
+  spec.version = "0.0.1"
   spec.authors = ["nsheo"]
   spec.email   = ["nsheo@ntels.com"]
 
@@ -23,6 +23,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 12.0"
   spec.add_development_dependency "test-unit", "~> 3.0"
   spec.add_runtime_dependency "fluentd", [">= 0.14.10", "< 2"]
-  spec.add_runtime_dependency "vertica"
+  spec.add_runtime_dependency "jdbc-vertica", ">= 0.0.4"
   
 end
