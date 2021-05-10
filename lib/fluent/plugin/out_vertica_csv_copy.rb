@@ -22,10 +22,8 @@ module Fluent
 
       helpers :compat_parameters, :inject
 
-      #you need to run this
-      QUERY_TEMPLATE_LOCAL = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
-      QUERY_TEMPLATE_LOCAL_NORJT = "COPY %s.%s (%s) FROM LOCAL '%s' DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"	  
       QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' EXCEPTIONS '%s' DIRECT STREAM NAME '%sFluentd%d'"
+      #run only local node
       QUERY_TEMPLATE_NORJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
 	  
 	  def initialize
@@ -93,7 +91,6 @@ module Fluent
         database, table = expand_placeholders(chunk.metadata)
     		
         data_count = 0
-        #tmp = Tempfile.new("vertica-copy-temp", [perm = 0777])
         tmp = Tempfile.new("vertica-copy-temp")
         chunk.msgpack_each do |tag, time, data|
           tmp.write format_proc.call(tag, time, data).join("|") + "\n"
@@ -121,21 +118,13 @@ module Fluent
            File.chmod(0644, "#{@exception_path}")
            FileUtils.chown 'dbadmin', 'dbadmin', "#{@exception_path}"
         end
-        
-        if @local_node_run == false
-          File.open(tmp.path, "r") do |io|
-            if @rejected_path.nil?
-              vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: io)
-            else
-              vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: io)
-            end
-          end
-        else 
-          File.chmod(0777, tmp.path)
-          if @rejected_path.nil?
-            vertica.copy(QUERY_TEMPLATE_LOCAL_NORJT % ([@schema, @table, @column_names, tmp.path, @table, current_time]))
-          else
-            vertica.copy(QUERY_TEMPLATE_LOCAL % ([@schema, @table, @column_names, tmp.path, @rejected_path, @exception_path, @table, current_time]))
+        if @rejected_path.nil?
+          vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
+        else
+          if @local_node_run == false
+            vertica.copy(QUERY_TEMPLATE_NORJT % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
+          else 
+            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @rejected_path, @exception_path, @table, current_time]), source: tmp.path)
           end
         end
 
