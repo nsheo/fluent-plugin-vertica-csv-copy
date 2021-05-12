@@ -45,7 +45,7 @@ module Fluent
       config_param :table,          :string,  :default => nil, desc: "Database target table"
       config_param :column_names,   :string,  :default => nil, desc: "Column names for data load"
       config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
-      config_param :reject_type     :string,  :default => 'none', desc: "Rejected data type to save (none/table/file)" 
+      config_param :reject_type,    :string,  :default => 'none', desc: "Rejected data type to save (none/table/file)" 
       config_param :reject_target,  :string,  :default => nil, desc: "File path or table(local_node_run is false) for rejected data" 
       config_param :exception_path, :string,  :default => nil, desc: "When reject_type is file, path to create exceptions" 
       config_param :node_target,    :string,  :default => nil, desc: "When reject_type is file, target node to make rejected/exception file"
