@@ -56,13 +56,13 @@ $ fluent-plugin-config-format output vertica-csv-copy
   buffer_path /var/log/fluent/test.*.buffer
   flush_interval 60s
   
-  #set local_node_run on Vertica node server, you can run copy from local
-  #default false
-  local_node_run true 
-  
-  #if you don't want to make create those files, put empty
-  rejected_path /path/to/create_rejected_data
+  #set rejected type : none/table/path
+  reject_type file
+  reject_target /path/to/create_rejected_data
   exception_path /path/to/create_exception_data
+  #node name to rejected/exception file create(necessary when reject type is file)
+  node_target v_vmart_00001
+  
 </match>
 ```
 
