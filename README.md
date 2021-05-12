@@ -56,13 +56,9 @@ $ fluent-plugin-config-format output vertica-csv-copy
   buffer_path /var/log/fluent/test.*.buffer
   flush_interval 60s
   
-  #set rejected type : none/table/path
-  reject_type file
-  reject_target /path/to/create_rejected_data
-  exception_path /path/to/create_exception_data
-  #node name to rejected/exception file create(necessary when reject type is file)
-  node_target v_vmart_00001
-  
+  #set rejected type : none/table
+  reject_type table
+  reject_target table_name_save_rejected
 </match>
 ```
 
