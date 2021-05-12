@@ -85,7 +85,7 @@ module Fluent
         true
       end
 	  
-     def expand_placeholders(metadata)
+      def expand_placeholders(metadata)
         database = extract_placeholders(@database, metadata).gsub('.', '_')
         table = extract_placeholders(@table, metadata).gsub('.', '_')
         return database, table
@@ -94,7 +94,6 @@ module Fluent
       def write(chunk)
         #log.info "Data reformatting start"
         database, table = expand_placeholders(chunk.metadata)
-    		
         data_count = 0
         tmp = Tempfile.new("vertica-copy-temp")
         chunk.msgpack_each do |tag, time, data|
@@ -102,7 +101,6 @@ module Fluent
           data_count += 1
           #log.info "Check result %s" %([format_proc.call(tag, time, data).join("|")])
         end	
-		
         #log.info "Data Check \"%s\"" % ([tmp.read])
         tmp.close
         
@@ -115,10 +113,9 @@ module Fluent
 #           File.chmod(0644, "#{@rejected_path}")
 #           FileUtils.chown 'dbadmin', 'dbadmin', "#{@rejected_path}"
 #        end
-        
         if @reject_type == 'none'
           vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
-        else if @reject_type == 'table'
+        elsif @reject_type == 'table'
           if @reject_target.nil? 
             log.warn "Rejected Data target Table is empty"
             vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
@@ -138,12 +135,12 @@ module Fluent
             vertica.copy(QUERY_TEMPLATE_RJF2 % ([@schema, @table, @column_names, @reject_target, @node_target, @exception_path, @node_target, @table, current_time]), source: tmp.path)
           end
         end
-
+      
         vertica.close
         @vertica = nil
         log.info "Stream Data \"%s:%s:%s:%sFluentd%d:%d\"" % ([@database, @schema, @table, @table, current_time, data_count])
       end
-
+      
 	  
       private
 	  
@@ -161,7 +158,7 @@ module Fluent
           values
         end
       end
-
+      
 	  
       def vertica
         @vertica ||= Vertica.connect({
