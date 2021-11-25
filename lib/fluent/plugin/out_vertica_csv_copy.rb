@@ -22,9 +22,9 @@ module Fluent
 
       helpers :compat_parameters, :inject
 
-      QUERY_TEMPLATE_RJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA AS TABLE '%s' DIRECT STREAM NAME '%sFluentd%d'"
+      QUERY_TEMPLATE_RJT = "COPY %s.%s (%s) FROM STDIN DELIMITER '%s' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA AS TABLE '%s' DIRECT STREAM NAME '%sFluentd%d'"
       
-      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
+      QUERY_TEMPLATE = "COPY %s.%s (%s) FROM STDIN DELIMITER '%s' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' DIRECT STREAM NAME '%sFluentd%d'"
       
 #      QUERY_TEMPLATE_RJF1 = "COPY %s.%s (%s) FROM STDIN DELIMITER '|' RECORD TERMINATOR E'\n' ENFORCELENGTH ABORT ON ERROR NULL '' REJECTED DATA '%s' ON %s DIRECT STREAM NAME '%sFluentd%d'"
       
@@ -43,7 +43,8 @@ module Fluent
       config_param :database,       :string,  :default => nil, desc: "Database name"
       config_param :schema,         :string,  :default => nil, desc: "Database schema"
       config_param :table,          :string,  :default => nil, desc: "Database target table"
-      config_param :column_names,   :string,  :default => nil, desc: "Column names for data load"
+	  config_param :column_names    :string,  :default => nil, desc: "Table column names to copy"
+	  config_param :csv_delimiter,  :string,  :default => '|', desc: "CSV Delimiter string"
       config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
       config_param :reject_type,    :string,  :default => 'none', desc: "Rejected data type to save (none/table)" 
       config_param :reject_target,  :string,  :default => nil, desc: "Table for rejected data" 
@@ -54,13 +55,8 @@ module Fluent
       def configure(conf)
         compat_parameters_convert(conf, :buffer, :inject)
         super
-        if @database.nil? || @table.nil? || @column_names.nil? || @schema.nil?
+        if @database.nil? || @table.nil? || @column_names.nil? || @schema.nil? || @key_names.nil?
           raise Fluent::ConfigError, "database and schema and tablename and column_names is required."
-        end
-		
-        @key_names = @key_names.nil? ? @column_names.split(',') : @key_names.split(',')
-        unless @column_names.split(',').count == @key_names.count
-          raise Fluent::ConfigError, "It does not take the integrity of the key_names and column_names."
         end
       end
 	  
@@ -130,13 +126,13 @@ module Fluent
     #    end
         
         if @reject_type == 'none'
-          vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
+          vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @csv_delimiter, @table, current_time]), source: tmp.path)
         else
           if @reject_target.nil? 
             log.warn "Rejected Data target Table is empty"
-            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @table, current_time]), source: tmp.path)
+            vertica.copy(QUERY_TEMPLATE % ([@schema, @table, @column_names, @csv_delimiter, @table, current_time]), source: tmp.path)
           else 
-            vertica.copy(QUERY_TEMPLATE_RJT % ([@schema, @table, @column_names, @reject_target, @table, current_time]), source: tmp.path)
+            vertica.copy(QUERY_TEMPLATE_RJT % ([@schema, @table, @column_names, @csv_delimiter, @reject_target, @table, current_time]), source: tmp.path)
           end
         end
       
