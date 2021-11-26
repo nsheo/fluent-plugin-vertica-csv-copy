@@ -56,8 +56,9 @@ module Fluent
         compat_parameters_convert(conf, :buffer, :inject)
         super
         if @database.nil? || @table.nil? || @column_names.nil? || @schema.nil? || @key_names.nil?
-          raise Fluent::ConfigError, "database and schema and tablename and column_names is required."
+          raise Fluent::ConfigError, "database and schema and tablename and key_names and column_names is required."
         end
+		@key_names = @key_names.split(',')
       end
 	  
       def start
