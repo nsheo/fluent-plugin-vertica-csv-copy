@@ -43,7 +43,7 @@ module Fluent
       config_param :database,       :string,  :default => nil, desc: "Database name"
       config_param :schema,         :string,  :default => nil, desc: "Database schema"
       config_param :table,          :string,  :default => nil, desc: "Database target table"
-	  config_param :column_names    :string,  :default => nil, desc: "Table column names to copy"
+	  config_param :column_names,   :string,  :default => nil, desc: "Table column names to copy"
 	  config_param :csv_delimiter,  :string,  :default => '|', desc: "CSV Delimiter string"
       config_param :key_names,      :string,  :default => nil, desc: "fleuntd target key, time can be override ${time}" 
       config_param :reject_type,    :string,  :default => 'none', desc: "Rejected data type to save (none/table)" 
