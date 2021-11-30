@@ -146,11 +146,12 @@ module Fluent
       private
 	  
       def format_proc
+	  buffer_time = Time.now
         proc do |tag, time, record|
           values = []
           @key_names.each_with_index do |key, i|
             if key == '${time}'
-              value = Time.now.strftime('%Y-%m-%d %H:%M:%S')
+              value = buffer_time.strftime('%Y-%m-%d %H:%M:%S')
             else
               value = record[key]
             end
