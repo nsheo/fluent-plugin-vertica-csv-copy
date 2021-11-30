@@ -150,7 +150,7 @@ module Fluent
           values = []
           @key_names.each_with_index do |key, i|
             if key == '${time}'
-              value = Time.at(time).strftime('%Y-%m-%d %H:%M:%S')
+              value = Time.now.strftime('%Y-%m-%d %H:%M:%S')
             else
               value = record[key]
             end
